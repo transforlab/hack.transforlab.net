@@ -16,14 +16,17 @@ block body
           i.icon.help
           include help-menu
         a.right.item.expand.button.collapsed.mode.hidden.desktop.only
-          i.icon.arrow.right(data-content="展開")
+          i.icon.arrow.right(data-content="show more")
         a.right.item.collapse.button.expanded.mode.desktop.only
-          i.icon.arrow.left(data-content="收合")
+          i.icon.arrow.left(data-content="show less")
         .right.icon.item.zoom.ui.dropdown
           i.icon.zoom.in
           include zoom-menu
 
     //- on mobile / tablet / phone, nav bar content is merged into this bar
+    // NOTE FROM FORKER : Navigation and Menu
+        // UI entriepoints don't work for external entries,
+        // i.e. ethercalc_name + "/edit"
     nav#topbar
       .ui.borderless.menu
         a.item.foldr.title
@@ -37,30 +40,30 @@ block body
           i.icon.help
           include help-menu
         a.right.item.show.nav.button.collapsed.mode.mobile.only
-          i.icon.arrow.down(data-content="展開")
+          i.icon.arrow.down(data-content="show more")
         a.right.item.hide.nav.button.expanded.mode.hidden.mobile.only
-          i.icon.arrow.up(data-content="收合")
+          i.icon.arrow.up(data-content="show less")
         .right.ui.dropdown.icon.item.meta.phone.only
           i.icon.ellipsis.vertical
           .menu
-            a.item.edit.table.tiny.only(target="iframe") 編輯
+            a.item.edit.table.tiny.only(target="iframe") edit
               i.icon.pencil
-            a.item.refresh.table.tiny.only.hidden 更新
+            a.item.refresh.table.tiny.only.hidden refresh
               i.icon.repeat
             include white_label-shortcuts-dropdown
-            .item.history 紀錄
+            .item.history history
               i.icon.time
               include foldr_history-menu
-            .item.about 說明
+            .item.about about
               i.icon.help
               include help-menu
         .right.icon.item.zoom.ui.dropdown.tablet.only
           i.icon.zoom.in
           include zoom-menu
         a.right.icon.item.edit.table(target="iframe")
-          i.icon.pencil(data-content="編輯")
+          i.icon.pencil(data-content="edit")
         a.right.icon.item.refresh.table.hidden
-          i.icon.repeat(data-content="更新")
+          i.icon.repeat(data-content="refresh")
         a.right.icon.item.add.to.list.hidden
           i.icon.add
       .ui.segment.submit.no.margin.hidden.expanded.mode
@@ -68,21 +71,21 @@ block body
           .inline.field
             .ui.radio.checkbox.add.only
               input.content.type(id="add-only",type="radio",name="submit",checked)
-              label(for="add-only") 投稿
+              label(for="add-only") add a reference
             .ui.radio.checkbox.add.create
               input.content.type(id="create-add",type="radio",name="submit")
-              label(for="create-add") 開 hackpad 並投稿
+              label(for="create-add") add new pad
         form.ui.warning.form.adding.only.mode
           .ui.error.message
           .field
             .ui.left.labeled.icon.input
-              input.new.link.title(placeholder="想顯示在 foldr 中的連結名稱",type="text",name="new-link-title",value="",required)
+              input.new.link.title(placeholder="New Link Title",type="text",name="new-link-title",value="",required)
               i.icon.font
               .ui.corner.label
                 i.icon.asterisk
           .field
             .ui.left.labeled.icon.input
-              input.new.link.url(placeholder="連結網址",type="url",name="new-link-url",value="",required)
+              input.new.link.url(placeholder="New Link URL",type="url",name="new-link-url",value="",required)
               i.icon.url
               .ui.corner.label
                 i.icon.asterisk
@@ -91,7 +94,7 @@ block body
           .ui.error.message
           .field
             .ui.left.labeled.icon.input
-              input.new.pad.title(placeholder="想顯示在 foldr 中的文件名稱",type="text",name="new-pad-name",value="",required)
+              input.new.pad.title(placeholder="new text.allmende.io pad",type="text",name="new-pad-name",value="",required)
               i.icon.font
               .ui.corner.label
                 i.icon.asterisk
@@ -108,10 +111,11 @@ block script
   script.
     // prepare to handle url
     var paths = location.pathname.split('/') || [];
-    var ethercalc_name     = paths[1] || "welcome-to-hackfoldr";
+    var ethercalc_name     = paths[1] || "transforlab";
     var current_iframe_url = paths[2] ? unescape(unescape(paths[2])) : null;
     var history_state={};
     // prepare to handle backend data (from ethercalc or google spreadsheet)
+    var api_iri = "";
     var csv_api_source = "";
     var csv_api_source_type = "";
     var csv_api_source_id = ethercalc_name;
@@ -126,8 +130,10 @@ block script
     var foldr_scale = JSON.parse(localStorage.getItem("hackfoldr-scale")) || "";
 
     // check where the csv will come from, ethercalc or gsheet?
+    // NOTE FROM FORKER : Why this condition?
     if(ethercalc_name.length < 40){
-      csv_api_source = 'https://ethercalc.org/_/'+ethercalc_name+'/csv';
+      api_iri = 'https://calc.allmende.io/'
+      csv_api_source = api_iri + '_/'+ethercalc_name+'/csv';
       csv_api_source_type = "ethercalc";
     }else{
       csv_api_source = 'docs.google.com/feeds/download/spreadsheets/Export?key='+ethercalc_name+'&exportFormat=csv&gid=0';
@@ -139,7 +145,8 @@ block script
     // let user sort #toc menu by drag and drop, a very user friendly feature suggest by @ipa. using jquery ui sortable. (also, ethercalc only)
     var sort_ethercalc = function(sort_initial_row, sort_target_row){
       $.ajax({
-        url: "https://ethercalc.org/_/"+ethercalc_name,
+        // NOTE FROM FORKER : Should infer an api_source. DONE
+        url: api_iri + "_/"+ethercalc_name,
         contentType: 'text/plain',
         data: 'moveinsert A'+sort_initial_row+':F'+sort_initial_row+' A'+sort_target_row,
         type: 'POST',
@@ -230,7 +237,7 @@ block script
         }
 
         // automatically assign various of pretty icons for link items
-        if(link_url.match(/^.*.hackpad.com\//)){
+        if(link_url.match(/^.text.allmende.io\//)){
           link_icon = "text file outline";
         } else if(link_url.match(/^.*.etherpad.mozilla.org\//)) {
           link_icon = "file outline";
@@ -315,7 +322,7 @@ block script
 
         // wrap up link item optinos into a hash
         var context = {id: row_index+1, url: link_url, subject: row[1], icon: link_icon, type: link_type, target: link_target};
-        // and send it into the html template (meanwhile, assign it an id for jquery sortable)        
+        // and send it into the html template (meanwhile, assign it an id for jquery sortable)
         var $link_element = $(link_template(context));
 
         // parse link labels
@@ -369,7 +376,7 @@ block script
         // set iframe src?
         if(current_iframe_url == "edit"){
           if(csv_api_source_type=="ethercalc"){
-            iframe_src = 'https://ethercalc.org/'+csv_api_source_id;
+            iframe_src = api_iri+csv_api_source_id;
           }else{
             iframe_src = 'https://docs.google.com/spreadsheets/d/'+csv_api_source_id+'/edit';
           };
@@ -379,7 +386,7 @@ block script
           $("#topbar .add.to.list").show();
         }else if((new RegExp(context.url+"/?")).test(current_iframe_url)){
           iframe_src = current_iframe_url;
-        }else if(/^https:\/\/.*.hackpad.com\//.test(context.url)){
+        }else if(/^https:\/\/.text.allmende.io\//.test(context.url)){
           if( current_iframe_url === context.url.split(/\//).pop()){
             iframe_src = context.url;
           }
@@ -389,7 +396,7 @@ block script
           iframe_src = context.url;
         }
       }
-      
+
       var accordion_template_source = '<div class="ui accordion"><div id="{{id}}" class="title header item {{mode}}"><i class="icon folder closed"></i><i class="icon folder open hidden" data-content="{{title}}" style="display: none;"></i>{{title}}</div><div class="content ui small sortable menu {{mode}}"></div></div>';      var accordion_template = Handlebars.compile(accordion_template_source);
 
       // for foldr items
@@ -451,7 +458,7 @@ block script
         var this_row_url = row[0].trim();
         var this_row_title = row[1].trim();
 
-        // if column A and B is empty, then skip this row 
+        // if column A and B is empty, then skip this row
         if(this_row_url.length === 0 && this_row_title.length === 0){
           return
         }
@@ -462,7 +469,7 @@ block script
 
           if(this_row_title.length > 0){
 
-            // make the first non-comment content foldr title 
+            // make the first non-comment content foldr title
             $('#topbar .foldr.title .text').text(this_row_title);
             current_foldr_name = this_row_title;
             got_title = true;
@@ -507,7 +514,7 @@ block script
           //});
         } else {
           // since foldr title is set, start to get links in #toc
-          if(this_row_url.length == 0 || this_row_url.match(/^>/)){ // folder 
+          if(this_row_url.length == 0 || this_row_url.match(/^>/)){ // folder
             depth = 1
             add_accordion(row_index, row);
           }else if(this_row_url.match(/^</)){ // end folder
@@ -517,9 +524,9 @@ block script
             // set initial page title
             if(this_row_url == iframe_src){
               if(iframe_src == "edit"){
-                $("title").text("編輯 | "+current_foldr_name+" | hackfoldr");
+                $("title").text("editing "+current_foldr_name+" | hack.transforlab.net");
               }else{
-                $("title").text(this_row_title+" | "+current_foldr_name+" | hackfoldr");
+                $("title").text(this_row_title+" | "+current_foldr_name+" | hack.transforlab.net");
               }
             }
           }
@@ -619,6 +626,9 @@ block script
               result[0] = o.url || "";
               result[1] = o.title || "";
               result[2] = o.foldrexpand || "";
+
+              // NOTE FROM FORKER : TODO : What is this line doing here?
+
               result[3] = o["編輯註解"] || "";
               result[4] = o.hints || "";
               return result;
@@ -682,7 +692,7 @@ block script
     $(".frame, #iframe").addClass(foldr_scale + " size");
     var set_scale = function(scale){
       $(".frame, #iframe").removeClass("normal large larger").addClass(scale+" size");
-      localStorage.setItem("hackfoldr-scale", JSON.stringify(scale));    
+      localStorage.setItem("hackfoldr-scale", JSON.stringify(scale));
     };
     $("#nav, #topbar").on("click tap", ".zoom.dropdown .normal", function(){
       set_scale("normal");
@@ -735,7 +745,7 @@ block script
     // prepare to post to ethercalc
     var post_ethercalc = function(post_title, post_url){
       $.ajax({
-        url: "https://ethercalc.org/_/"+ethercalc_name,
+        url: api_iri + "_/"+ethercalc_name,
         //url: "https://ethercalc.org/_/"+ethercalc_name+"?row="+new_pad_row_index.toString(),
         type: 'POST',
         contentType: 'text/csv',
@@ -749,7 +759,8 @@ block script
       var new_hackpad_title = $("#topbar .form .new.pad.title").val();
       //var new_hackpad_id = encodeURIComponent(new_hackpad_title.slice(0,8));
       var new_hackpad_id = Math.random().toString(36);
-      var new_hackpad_url = "https://g0v.hackpad.com/"+new_hackpad_id;
+      var pad_iri = "https://text.allmende.io/"
+      var new_hackpad_url = pad_iri+new_hackpad_id;
       var new_menu_item = '<a href="'+new_hackpad_url+'" target="iframe" class="link item"><i class="icon text file outline"></i>'+new_hackpad_title+'</a>';
       // add new hackpad info to foldr
       if(new_hackpad_title.length > 0){
@@ -817,7 +828,7 @@ block script
     $("#sidebar").on("click tap", "a.link.item", function(event){
       // dynamic url
       var iframe_path = event.target.href;
-      if(iframe_path.match(/^https:\/\/.*.hackpad.com\//)){
+      if(iframe_path.match(/^https:\/\/.text.allmende.io\//)){
         iframe_path = iframe_path.split(/\//).pop();
       }
       history.pushState(history_state,'', '/'+ethercalc_name+'/'+encodeURIComponent(encodeURIComponent(iframe_path))) ;
@@ -831,7 +842,7 @@ block script
 
         // reset page title
         $("title").text(
-          $(this).contents().filter(function(){ 
+          $(this).contents().filter(function(){
             return this.nodeType == 3;
           })[0].nodeValue+" | "+current_foldr_name+" | hackfoldr"
         );
@@ -865,7 +876,7 @@ block script
       // show sheet
       if(!hide_sheet){
         if(csv_api_source_type=="ethercalc"){
-          $("#topbar .edit.table").attr("href",'https://ethercalc.org/'+csv_api_source_id);
+          $("#topbar .edit.table").attr("href",api_iri + csv_api_source_id);
           // make foldr items sortable
           if(sort_sheet){
             $("#toc .sortable").sortable(sort_action);
@@ -876,7 +887,7 @@ block script
         // change url
         history.pushState(history_state,'', '/'+ethercalc_name+'/edit');
         // change page title
-        $("title").text("編輯 | "+current_foldr_name+" | hackfoldr");
+        $("title").text("Hack | "+current_foldr_name+" | allmende.io");
         // inactive #toc items
         $("#toc a.link.item").removeClass("active");
       }
