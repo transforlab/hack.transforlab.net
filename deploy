@@ -2,8 +2,8 @@
 set -e -x
 git --version
 upstream=$1
-: ${upstream:=allmende}
-: ${REPO:=git@github.com:allmende/hackfoldr-2.0}
+: ${upstream:=transforlab}
+: ${REPO:=git@github.com:transforlab/hack.transforlab.net}
 git fetch $upstream
 if [ `git rev-list HEAD...$upstream/master --count` -ne 0 ]; then
   echo "not deploying"
@@ -11,9 +11,11 @@ if [ `git rev-list HEAD...$upstream/master --count` -ne 0 ]; then
 fi
 npm i
 rm -rf _public
-# XXX: use --reference when not in shallow clone
-#git clone $REPO --reference . -b gh-pages _public
-git clone $REPO -b gh-pages _public
+
+# use --reference when not in shallow clone
+# git clone $REPO --reference . -b dokku _public
+
+git clone $REPO -b dokku _public
 rm -rf _public/*
 REV=`git describe --always`
 BUILD=git-$REV ./node_modules/.bin/gulp build
@@ -21,5 +23,6 @@ cd _public
 git remote add deploy dokku@apps.ecobytes.net:hackfoldr
 git add -A .
 echo "regen for $REV" | git commit-tree `git write-tree` -p `git rev-parse HEAD` -p $REV | xargs git reset --hard
-git push -f deploy gh-pages:master
+git push origin dokku
+git push -f deploy dokku:master
 cd ..
