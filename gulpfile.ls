@@ -34,7 +34,7 @@ gulp.task 'gh-pages', ->
     .pipe gulp.dest "#{build_path}"
 
 gulp.task 'dokku', ->
-  gulp.src 'dotfiles/*'
+  gulp.src 'dotfiles/.*'
     .pipe gulp.dest "#{build_path}"
 
 gulp.task 'server', ->
