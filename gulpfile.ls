@@ -50,6 +50,6 @@ gulp.task 'watch', ->
   gulp.watch './views/backup/*.html', <[html]> .on \change, gulp-livereload.changed
   gulp.watch 'js/*js', <[js]> .on \change, gulp-livereload.changed
 
-gulp.task 'build', <[jade sass html js assets gh-pages dokku]>
+gulp.task 'build', <[jade sass html js assets dokku]>
 gulp.task 'dev', <[build server watch]>
 gulp.task 'default', <[build]>
